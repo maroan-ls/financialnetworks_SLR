@@ -1,0 +1,97 @@
+---
+title: "Thesis Supplement Code Notebook for Literature Part_QCA1"
+author: Maroan El Sirfy
+output: html_notebook
+---
+
+
+```{r include=FALSE}
+if (!require('bibliometrix')) install.packages('bibliometrix'); library('bibliometrix')
+if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
+if (!require('stringr')) install.packages('stringr'); library('stringr')
+```
+
+```{r}
+data <- read.csv("Data_Lit/Completesetincluded1.csv", stringsAsFactors = FALSE)
+```
+
+
+```{r}
+##################
+data_processed <- data %>%
+  rename(AU = Author,
+         TI = Title,
+         SO = Publication.Title,
+         PY = Publication.Year,
+         DI = DOI,
+         DT = Item.Type,
+         PU = Extra) %>%
+  mutate( # Publisher not available
+         TC = "NA", # Document Type not available
+         ID = "NA",  # Keywords not available
+         DE = "NA", # Database Source not available
+         DB = "generic")  # Author Keywords not available
+
+# Ensure that all required fields are present, filling with NA if necessary
+required_columns <- c("AU", "TI", "SO", "PY", "DI", "TC", "PU", "DT", "ID", "DE", "DB")
+data_processed <- data_processed %>% select(all_of(required_columns))
+
+##biblio_data <- convert2df(data_processed, dbsource = "generic", format = "csv")
+######################
+
+# Create a bibliometric dataframe manually
+biblio_data <- data_processed
+
+# Convert authors' names to the required format
+biblio_data$AU <- sapply(strsplit(biblio_data$AU, ";"), function(x) paste(x, collapse = "; "))
+```
+
+
+```{r}
+
+# Inspect the resulting bibliometric dataframe
+str(biblio_data)
+head(biblio_data)
+
+results <- biblioAnalysis(biblio_data)
+########################
+```
+
+
+
+
+
+```{r}
+results <- biblioAnalysis(biblio_data)
+```
+
+```{r}
+summary_results <- summary(results)
+summary_results
+```
+
+
+```{r}
+
+df_publications <- data.frame(c(summary_results[["MostRelSources"]][["Sources       "]]), c(summary_results[["MostRelSources"]][["Articles"]]))
+colnames(df_publications) <- c("Publications", "appearance")
+df_publications <- transform(df_publications, appearance = as.numeric(appearance))
+df_publications <- df_publications[-c(1),]
+```
+```{r}
+write.csv(df_publications, "specify_path_and_file_name.csv")
+
+```
+
+```{r}
+yearly_df <- summary_results[["AnnualProduction"]]
+names(yearly_df)[names(yearly_df) == 'Year   '] <- 'Year'
+```
+```{r}
+yearly_df$Year <- as.Date(yearly_df$Year)
+```
+```{r}
+
+plot(yearly_df, type = "h")
+```
+
